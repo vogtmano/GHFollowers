@@ -5,14 +5,15 @@
 //  Created by Maks Vogtman on 25/04/2024.
 //
 
-import Foundation
+import UIKit
 
 // Singleton makes it globally accessabale throughout the whole app.
 class NetworkManager {
     
 // The static keyword is used to define properties and methods that belong to the class or struct itself rather than to an instance of the class or struct. They can be accessed using the class or struct name without needing an instance. Thanks to static, you can use NetworkManager.shared
     static let shared = NetworkManager()
-    let baseURL = "https://api.github.com/users/"
+    private let baseURL = "https://api.github.com/users/"
+    let cache = NSCache<NSString, UIImage>()
     
 // Part of the things with Singleton is that you want to restrict it so that can be only ONE instance of it - Singleton (it's in the name).
     
