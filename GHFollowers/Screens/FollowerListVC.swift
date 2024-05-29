@@ -16,7 +16,6 @@ class FollowerListVC: UIViewController {
     var followers = [Follower]()
     var page = 1
     var hasMoreFollowers = true
-    
     var collectionView: UICollectionView!
     
 // DataSource is what tells the collection view what to show.
@@ -60,13 +59,18 @@ class FollowerListVC: UIViewController {
         NetworkManager.shared.getFollowers(for: username, page: page) { [weak self] result in
             guard let self else { return }
             self.dismissLoadingView()
-            
             switch result {
             case .success(let followers):
                 if followers.count < 100 { self.hasMoreFollowers = false }
 //                self.followers = followers
 // Previously it was like the above, but I've changed it, so I can add two arrays to each other. Previously whe, it hit 100 followers, another 100 was added, but I wasn't able to see the first 100 anymore. Now it's 100 + 100.
                 self.followers.append(contentsOf: followers)
+                
+                if self.followers.isEmpty {
+                    let message = "This user doesn't have any followers. Go follow them 😃"
+                    DispatchQueue.main.async { self.showEmptyStateView(with: message, in: self.view) }
+                    return
+                }
                 self.updateData()
             case .failure(let error):
                 self.presentGFAlertOnMainThread(title: "Bad stuff happened", message: error.rawValue, buttonTitle: "Ok")

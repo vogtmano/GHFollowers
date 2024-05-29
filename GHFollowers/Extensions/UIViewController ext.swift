@@ -45,4 +45,11 @@ extension UIViewController {
             containerView = nil
         }
     }
+    
+// In this function I need to know what view I'm putting this in, couse I have to constrain it and add to subview. Here's why there's a view parameter.
+    func showEmptyStateView(with message: String, in view: UIView) {
+        let emptyStateView = GFEmptyStateView(message: message)
+        emptyStateView.frame = view.bounds
+        view.addSubview(emptyStateView)
+    }
 }
