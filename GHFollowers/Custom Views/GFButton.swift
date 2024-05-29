@@ -24,6 +24,7 @@ class GFButton: UIButton {
         configure()
     }
     
+// Private means that it's within the scope of the class.
     private func configure() {
         layer.cornerRadius = 10
         setTitleColor(.white, for: .normal)
