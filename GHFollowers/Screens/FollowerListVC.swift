@@ -14,6 +14,8 @@ class FollowerListVC: UIViewController {
     
     var username: String!
     var followers = [Follower]()
+    var page = 1
+    var hasMoreFollowers = true
     
     var collectionView: UICollectionView!
     
@@ -29,7 +31,7 @@ class FollowerListVC: UIViewController {
         super.viewDidLoad()
         configureViewController()
         configureCollectionView()
-        getFollowers()
+        getFollowers(username: username, page: page)
         configureDataSource()
     }
     
@@ -47,16 +49,21 @@ class FollowerListVC: UIViewController {
         collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: UIHelper.createThreeColumnFlowLayout(in: view))
 // I had to initialize the collectionView first, couse otherwise while adding to subview it would be nil.
         view.addSubview(collectionView)
+// I'm telling my delegate what to listen to. It needs to listen to self.
+        collectionView.delegate = self
         collectionView.backgroundColor = .systemBackground
         collectionView.register(FollowerCell.self, forCellWithReuseIdentifier: FollowerCell.reuseID)
     }
     
-    func getFollowers() {
-        NetworkManager.shared.getFollowers(for: username, page: 1) { [weak self] result in
+    func getFollowers(username: String, page: Int) {
+        NetworkManager.shared.getFollowers(for: username, page: page) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let followers):
-                self.followers = followers
+                if followers.count < 100 { self.hasMoreFollowers = false }
+//                self.followers = followers
+// Previously it was like the above, but I've changed it, so I can add two arrays to each other. Previously whe, it hit 100 followers, another 100 was added, but I wasn't able to see the first 100 anymore. Now it's 100 + 100.
+                self.followers.append(contentsOf: followers)
                 self.updateData()
             case .failure(let error):
                 self.presentGFAlertOnMainThread(title: "Bad stuff happened", message: error.rawValue, buttonTitle: "Ok")
@@ -80,5 +87,20 @@ class FollowerListVC: UIViewController {
         snapshot.appendSections([.main])
         snapshot.appendItems(followers)
         DispatchQueue.main.async { self.dataSource.apply(snapshot, animatingDifferences: true) }
+    }
+}
+
+// Delegates are just waiting to be called, and then they act. It sits and waits to be told to do something.
+extension FollowerListVC: UICollectionViewDelegate {
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        let offsetY = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+        let height = scrollView.frame.size.height
+        
+        if offsetY > contentHeight - height {
+            guard hasMoreFollowers else { return }
+            page += 1
+            getFollowers(username: username, page: page)
+        }
     }
 }
