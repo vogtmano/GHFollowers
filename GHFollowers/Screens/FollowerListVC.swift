@@ -18,6 +18,7 @@ class FollowerListVC: UIViewController {
     var page = 1
     var hasMoreFollowers = true
     var collectionView: UICollectionView!
+    var isSearching = false
     
 // DataSource is what tells the collection view what to show.
     
@@ -121,6 +122,15 @@ extension FollowerListVC: UICollectionViewDelegate {
             getFollowers(username: username, page: page)
         }
     }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let activeArray = isSearching ? filteredFollowers : followers
+        let follower = activeArray[indexPath.item]
+        let destVC = UserInfoVC()
+        destVC.username = follower.login
+        let navController = UINavigationController(rootViewController: destVC)
+        present(navController, animated: true)
+    }
 }
 
 // It's letting the view controller to know that every time I change the search result in the search bar, it's letting me know - hey, something changed. And then I'm setting searchController.searchResultsUpdater = self in the configureSearchController() function.
@@ -128,6 +138,7 @@ extension FollowerListVC: UISearchResultsUpdating, UISearchBarDelegate {
     func updateSearchResults(for searchController: UISearchController) {
 // I'm creating the filter by taking the text out of the search bar, and I'm making sure it's not empty.
         guard let filter = searchController.searchBar.text, !filter.isEmpty else { return }
+        isSearching = true
 // I'm creating filteredFollowers array by filtering my existing list of followers, based on the filter I've created a line above
         filteredFollowers = followers.filter { $0.login.lowercased().contains(filter.lowercased()) }
 // I'm updating the collection view on the on the filtered followers.
@@ -135,6 +146,7 @@ extension FollowerListVC: UISearchResultsUpdating, UISearchBarDelegate {
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        isSearching = false
         updateData(on: followers)
     }
 }
