@@ -14,6 +14,7 @@ class FollowerListVC: UIViewController {
     
     var username: String!
     var followers = [Follower]()
+    var filteredFollowers = [Follower]()
     var page = 1
     var hasMoreFollowers = true
     var collectionView: UICollectionView!
@@ -30,6 +31,7 @@ class FollowerListVC: UIViewController {
         super.viewDidLoad()
         configureViewController()
         configureCollectionView()
+        configureSearchController()
         getFollowers(username: username, page: page)
         configureDataSource()
     }
@@ -54,6 +56,15 @@ class FollowerListVC: UIViewController {
         collectionView.register(FollowerCell.self, forCellWithReuseIdentifier: FollowerCell.reuseID)
     }
     
+    func configureSearchController() {
+        let searchController = UISearchController()
+        searchController.searchResultsUpdater = self
+        searchController.searchBar.delegate = self
+        searchController.searchBar.placeholder = "Search for a username"
+        searchController.obscuresBackgroundDuringPresentation = false
+        navigationItem.searchController = searchController
+    }
+    
     func getFollowers(username: String, page: Int) {
         showLoadingView()
         NetworkManager.shared.getFollowers(for: username, page: page) { [weak self] result in
@@ -71,7 +82,7 @@ class FollowerListVC: UIViewController {
                     DispatchQueue.main.async { self.showEmptyStateView(with: message, in: self.view) }
                     return
                 }
-                self.updateData()
+                self.updateData(on: self.followers)
             case .failure(let error):
                 self.presentGFAlertOnMainThread(title: "Bad stuff happened", message: error.rawValue, buttonTitle: "Ok")
             }
@@ -89,7 +100,7 @@ class FollowerListVC: UIViewController {
     }
     
 // Now's where the data comes in. That's where I kind of feed the follower array. It's going to be called every time I take a snapshot and want to adjust the collection view.
-    func updateData() {
+    func updateData(on followers: [Follower]) {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Follower>()
         snapshot.appendSections([.main])
         snapshot.appendItems(followers)
@@ -109,5 +120,21 @@ extension FollowerListVC: UICollectionViewDelegate {
             page += 1
             getFollowers(username: username, page: page)
         }
+    }
+}
+
+// It's letting the view controller to know that every time I change the search result in the search bar, it's letting me know - hey, something changed. And then I'm setting searchController.searchResultsUpdater = self in the configureSearchController() function.
+extension FollowerListVC: UISearchResultsUpdating, UISearchBarDelegate {
+    func updateSearchResults(for searchController: UISearchController) {
+// I'm creating the filter by taking the text out of the search bar, and I'm making sure it's not empty.
+        guard let filter = searchController.searchBar.text, !filter.isEmpty else { return }
+// I'm creating filteredFollowers array by filtering my existing list of followers, based on the filter I've created a line above
+        filteredFollowers = followers.filter { $0.login.lowercased().contains(filter.lowercased()) }
+// I'm updating the collection view on the on the filtered followers.
+        updateData(on: filteredFollowers)
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        updateData(on: followers)
     }
 }
